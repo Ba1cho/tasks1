@@ -2,7 +2,7 @@
 # How it works
 
 Первое тестовое задание 
-Второе представлено в txt
+Второе представлено в sql_task_2_test_query.txt
 
 # Getting started
 
