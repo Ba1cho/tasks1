@@ -9,17 +9,17 @@
 
 
 ## Installation
-### 1. Frontend: Choose 1 of 2 ways below:
-- Install frontend dependencies and start frontend locally:
+### 1. Frontend: Выберите 1 из 2 способов ниже:
+- Установите зависимости фронта и запустите фронт на локальном уровне:
 ```shell
 cd frontend
 npm install 
 cd ..
 npm --prefix=frontend start
 ```
-This command will install and start the Angular development server. You can access the Angular application through your web browser at `http://localhost:4200`.
+Эта команда установит и запустит сервер угловой разработки. Вы можете получить доступ к угловому приложению через свой веб -браузер в `http://localhost:4200`.
 
-- Install and build frontend as static files (Choose this if you don't want to make any changes to Frontend project):
+- Установите и строите фронта в виде статических файлов (выберите это, если вы не хотите вносить какие -либо изменения в проект Frontend):
 ```shell
 npm --prefix=frontend install
 npm --prefix=frontend run build
@@ -54,4 +54,6 @@ python backend/manage.py migrate
 python backend/manage.py runserver
 ```
 
-Now, your local server should be running, and you can access this Django/Angular application through your web browser at http://localhost:8000.
+Теперь ваш локальный сервер должен работать, и вы можете получить доступ к этому приложению Django/Angular через свой веб -браузер в http://localhost:8000.
+### Useful information
+- node module в архиве, бибилиотеки для python представлены requirements
