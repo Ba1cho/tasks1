@@ -1,0 +1,204 @@
+-- Создаем базу данных
+CREATE DATABASE CompanyDB;
+GO
+
+-- Используем созданную базу данных
+USE CompanyDB;
+GO
+
+-- Создаем таблицу Departments
+CREATE TABLE Departments (
+    ID INT PRIMARY KEY IDENTITY(1, 1),
+    Name NVARCHAR(100) NOT NULL
+);
+GO
+
+-- Создаем таблицу Employees
+CREATE TABLE Employees (
+    ID INT PRIMARY KEY IDENTITY(1, 1),
+    Name NVARCHAR(100) NOT NULL,
+    Salary DECIMAL(10, 2) NOT NULL,
+    DepartmentID INT FOREIGN KEY REFERENCES Departments(ID),
+    ChiefID INT FOREIGN KEY REFERENCES Employees(ID)
+);
+GO
+INSERT INTO Departments (Name)
+VALUES
+    ('HR'),
+    ('IT'),
+    ('Finance'),
+    ('Marketing'),
+    ('Operations');
+-- Сотрудники для HR
+INSERT INTO Employees (Name, Salary, DepartmentID, ChiefID)
+VALUES
+    ('Alice Johnson', 50000.00, 1, NULL), -- Начальник HR
+    ('Bob Smith', 45000.00, 1, 1),
+    ('Charlie Brown', 40000.00, 1, 1);
+
+-- Сотрудники для IT
+INSERT INTO Employees (Name, Salary, DepartmentID, ChiefID)
+VALUES
+    ('David Wilson', 80000.00, 2, NULL), -- Начальник IT
+    ('Eva Green', 75000.00, 2, 4),
+    ('Frank White', 70000.00, 2, 4),
+    ('Grace Lee', 65000.00, 2, 4);
+
+-- Сотрудники для Finance
+INSERT INTO Employees (Name, Salary, DepartmentID, ChiefID)
+VALUES
+    ('Henry Ford', 90000.00, 3, NULL), -- Начальник Finance
+    ('Ivy Taylor', 85000.00, 3, 8),
+    ('Jack Black', 80000.00, 3, 8);
+
+-- Сотрудники для Marketing
+INSERT INTO Employees (Name, Salary, DepartmentID, ChiefID)
+VALUES
+    ('Karen Hill', 60000.00, 4, NULL), -- Начальник Marketing
+    ('Leo Garcia', 55000.00, 4, 11),
+    ('Mia Rodriguez', 50000.00, 4, 11),
+    ('Nina Martinez', 45000.00, 4, 11);
+
+-- Сотрудники для Operations
+INSERT INTO Employees (Name, Salary, DepartmentID, ChiefID)
+VALUES
+    ('Oscar Brown', 70000.00, 5, NULL), -- Начальник Operations
+    ('Paul Davis', 65000.00, 5, 16),
+    ('Quincy Adams', 60000.00, 5, 16),
+    ('Rachel Green', 55000.00, 5, 16),
+    ('Steve Harris', 50000.00, 5, 16);
+SELECT * FROM Departments;
+SELECT * FROM Employees;
+1)
+SELECT d.Name AS DepartmentName, e.Name AS EmployeeName
+FROM Departments d
+JOIN Employees e ON d.ID = e.DepartmentID
+WHERE e.ID = (
+    SELECT MAX(ID)
+    FROM Employees
+    WHERE DepartmentID = d.ID
+);
+2) 
+SELECT d.Name AS DepartmentName
+FROM Departments d
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM Employees e
+    WHERE e.DepartmentID = d.ID
+    AND LOWER(e.Name) LIKE '%z%'
+    AND LOWER(e.Name) LIKE '%w%'
+);
+3)
+WITH RankedEmployees AS (
+    SELECT
+        e1.Name AS EmployeeName,
+        e1.Salary AS EmployeeSalary,
+        e2.Name AS NextEmployeeName,
+        e2.Salary AS NextEmployeeSalary,
+        ROW_NUMBER() OVER (PARTITION BY e1.ID ORDER BY e2.Salary ASC, e2.ID DESC) AS rn
+    FROM Employees e1
+    LEFT JOIN Employees e2 ON e1.DepartmentID = e2.DepartmentID
+    AND e2.Salary > e1.Salary
+)
+SELECT EmployeeName, EmployeeSalary, NextEmployeeName, NextEmployeeSalary
+FROM RankedEmployees
+WHERE rn = 1;
+4)
+WITH DepartmentSalaries AS (
+    SELECT
+        d.Name AS DepartmentName,
+        SUM(e.Salary) AS TotalSalary
+    FROM Departments d
+    JOIN Employees e ON d.ID = e.DepartmentID
+    GROUP BY d.Name
+)
+SELECT
+    DepartmentName,
+    TotalSalary,
+    SUM(TotalSalary) OVER (ORDER BY TotalSalary ASC) AS CumulativeSalary
+FROM DepartmentSalaries
+ORDER BY TotalSalary ASC;
+5)
+WITH DepartmentAverages AS (
+    SELECT
+        d.ID AS DepartmentID,
+        AVG(e.Salary) AS AvgSalary
+    FROM Departments d
+    JOIN Employees e ON d.ID = e.DepartmentID
+    GROUP BY d.ID
+),
+MaxAverage AS (
+    SELECT MAX(AvgSalary) AS TargetSalary
+    FROM DepartmentAverages
+)
+INSERT INTO Employees (Name, Salary, DepartmentID, ChiefID)
+SELECT
+    'New Employee',
+    (TargetSalary - AvgSalary) * (SELECT COUNT(*) FROM Employees WHERE DepartmentID = da.DepartmentID),
+    da.DepartmentID,
+    NULL
+FROM DepartmentAverages da, MaxAverage ma
+WHERE (TargetSalary - AvgSalary) > 0;
+6)
+WITH DuplicateEmployees AS (
+    SELECT
+        ID,
+        ROW_NUMBER() OVER (PARTITION BY Name, ChiefID, Salary, DepartmentID ORDER BY ID) AS rn
+    FROM Employees
+)
+DELETE FROM Employees
+WHERE ID IN (
+    SELECT ID
+    FROM DuplicateEmployees
+    WHERE rn > 1
+);
+7)
+-- Предположим, что мы меняем местами сотрудников с ID = 1 и ID = 2
+UPDATE Employees
+SET ChiefID = CASE
+    WHEN ID = 1 THEN (SELECT ChiefID FROM Employees WHERE ID = 2)
+    WHEN ID = 2 THEN (SELECT ChiefID FROM Employees WHERE ID = 1)
+    ELSE ChiefID
+END
+WHERE ID IN (1, 2);
+8)
+-- Предположим, что начальник имеет ID = 1, а новый департамент имеет ID = 2
+WITH RecursiveSubordinates AS (
+    SELECT ID
+    FROM Employees
+    WHERE ID = 1
+    UNION ALL
+    SELECT e.ID
+    FROM Employees e
+    INNER JOIN RecursiveSubordinates rs ON e.ChiefID = rs.ID
+)
+UPDATE Employees
+SET DepartmentID = 2
+WHERE ID IN (SELECT ID FROM RecursiveSubordinates);
+9)
+WITH DepartmentAverages AS (
+    SELECT
+        DepartmentID,
+        AVG(Salary) AS AvgSalary
+    FROM Employees
+    GROUP BY DepartmentID
+),
+PossibleTransfers AS (
+    SELECT
+        e.ID AS EmployeeID,
+        e.DepartmentID AS CurrentDepartmentID,
+        d.ID AS NewDepartmentID,
+        da1.AvgSalary AS CurrentAvgSalary,
+        da2.AvgSalary AS NewAvgSalary
+    FROM Employees e
+    CROSS JOIN Departments d
+    JOIN DepartmentAverages da1 ON e.DepartmentID = da1.DepartmentID
+    JOIN DepartmentAverages da2 ON d.ID = da2.DepartmentID
+    WHERE e.DepartmentID <> d.ID
+)
+SELECT
+    EmployeeID,
+    CurrentDepartmentID,
+    NewDepartmentID
+FROM PossibleTransfers
+WHERE (CurrentAvgSalary - e.Salary) < (NewAvgSalary - e.Salary);
