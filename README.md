@@ -56,4 +56,4 @@ python backend/manage.py runserver
 
 Теперь ваш локальный сервер должен работать, и вы можете получить доступ к этому приложению Django/Angular через свой веб -браузер в http://localhost:8000.
 ### Useful information
-- node module в архиве, бибилиотеки для python представлены requirements
+- node module в архиве, бибилиотеки для python представлены requirements и архивом в venv
